@@ -2,162 +2,185 @@ import streamlit as st
 import google.generativeai as genai
 from pypdf import PdfReader
 import os
+import gdown  
 
 # Configuração da Página
-st.set_page_config(page_title="Harvard Mentor AI", layout="wide")
+st.set_page_config(
+    page_title="Harvard Mentor AI",
+    page_icon="🎓",
+    layout="wide"
+)
 
-# --- 1. CONFIGURAÇÃO E SEGURANÇA ---
+# --- 1. CONFIGURAÇÃO DE SEGREDOS ---
 api_key = st.secrets.get("GOOGLE_API_KEY")
+file_id = st.secrets.get("GDRIVE_FILE_ID")
 
-# Se não tiver chave configurada, pede na tela
-if not api_key:
-    api_key = st.sidebar.text_input("Insira sua Google API Key", type="password")
+# --- 2. FUNÇÕES DE INFRAESTRUTURA ---
 
-# --- 2. FUNÇÕES DE BACKEND ---
+def download_pdf_if_needed(filename):
+    """
+    Verifica se o PDF existe localmente. 
+    Se não existir (cenário do Streamlit Cloud), baixa do Google Drive.
+    """
+    if os.path.exists(filename):
+        return True
+    
+    if not file_id:
+        st.error("Erro: ID do arquivo não configurado nos Secrets.")
+        return False
+
+    with st.spinner("Baixando material de estudo seguro (Isso acontece apenas uma vez)..."):
+        try:
+            
+            url = f'https://drive.google.com/uc?id={file_id}'
+            gdown.download(url, filename, quiet=False)
+            return True
+        except Exception as e:
+            st.error(f"Falha ao baixar o arquivo: {e}")
+            return False
 
 @st.cache_resource
 def load_pdf_text(pdf_path):
-    """Lê o PDF e extrai o texto. Usa cache para não reler a cada clique."""
-    if not os.path.exists(pdf_path):
+    """Lê o PDF e extrai o texto. Usa cache para performance."""
+    if not download_pdf_if_needed(pdf_path):
         return None
     
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    return text
+    try:
+        reader = PdfReader(pdf_path)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        st.error(f"Erro ao ler PDF: {e}")
+        return None
 
 def get_gemini_response(history, mode, context_text):
-    """Envia o histórico e o contexto para o Gemini."""
-    
-    
-    if mode == "Consultor":
-        system_instruction = f"""
-        Você é um Consultor Sênior formado com o material do 'Harvard Manager Mentor'.
-        SEU OBJETIVO: Ajudar o usuário a resolver problemas práticos de negócios usando APENAS os conceitos do material fornecido.
-        MATERIAL DE BASE: {context_text}
-        DIRETRIZES:
-        - Seja direto e profissional.
-        - Cite o conceito específico (ex: 'Segundo o módulo de Negociação...').
-        - Dê planos de ação (Passo 1, Passo 2).
-        """
-    elif mode == "Quiz":
-        system_instruction = f"""
-        Você é um Examinador Rigoroso da Harvard.
-        SEU OBJETIVO: Testar o conhecimento do usuário sobre o material.
-        MATERIAL DE BASE: {context_text}
-        DIRETRIZES:
-        - Faça UMA pergunta por vez baseada no texto.
-        - Espere a resposta.
-        - Avalie se está certo ou errado e explique o porquê baseando-se no texto.
-        - Depois, proponha outra pergunta.
-        """
-    elif mode == "Roleplay":
-        system_instruction = f"""
-        Você é um ator em uma simulação de negócios.
-        SEU OBJETIVO: Agir como uma contraparte difícil (um cliente bravo, um funcionário desmotivado ou um fornecedor rígido).
-        MATERIAL DE BASE: {context_text}
-        DIRETRIZES:
-        - Não saia do personagem.
-        - O usuário deve tentar aplicar as técnicas do curso para lidar com você.
-        - No final, se o usuário pedir 'Feedback', saia do personagem e avalie a performance dele baseada no curso.
-        """
-    else:
-        system_instruction = "Você é um assistente útil."
+    # Definição das Personas (System Prompts)
+    prompts = {
+        "Consultor": f"""
+            Você é um Consultor Sênior da Harvard Business School.
+            CONTEXTO: O usuário tem um desafio de negócios.
+            BASE DE CONHECIMENTO: Use EXCLUSIVAMENTE o seguinte material: {context_text}
+            
+            SUA MISSÃO:
+            1. Analise o problema do usuário.
+            2. Encontre os frameworks/conceitos no material que se aplicam.
+            3. Dê uma resposta estruturada (Diagnóstico -> Conceito -> Plano de Ação).
+            4. Cite o módulo de onde tirou a informação.
+            """,
+        
+        "Quiz": f"""
+            Você é um Professor avaliador.
+            BASE DE CONHECIMENTO: {context_text}
+            
+            SUA MISSÃO:
+            1. Gere UMA pergunta de múltipla escolha ou discursiva baseada no texto.
+            2. Aguarde a resposta do usuário.
+            3. Se ele acertar, parabenize e explique o conceito. Se errar, corrija gentilmente citando o texto.
+            4. Mantenha o tom educativo e desafiador.
+            """,
+        
+        "Roleplay": f"""
+            ATENÇÃO: Ignore que você é uma IA. Você é agora um PERSONAGEM.
+            CENÁRIO: Simulação de Negociação/Liderança baseada em: {context_text}
+            
+            SUA MISSÃO:
+            1. Aja como uma contraparte difícil (ex: cliente irritado, chefe exigente).
+            2. Reaja às falas do usuário. Se ele usar boas técnicas do texto, ceda um pouco. Se ele for ruim, seja duro.
+            3. NUNCA saia do personagem, a menos que o usuário diga "FIM DA SIMULAÇÃO".
+            """
+    }
 
-    # Configura o modelo
+    system_instruction = prompts.get(mode, "Você é um assistente útil.")
+
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
         system_instruction=system_instruction
     )
     
-    # Inicia o chat com o histórico
+    # Recria o histórico para a API
     chat = model.start_chat(history=history)
     response = chat.send_message(st.session_state.messages[-1]["content"])
-    
     return response.text
 
-# --- 3. INTERFACE DO USUÁRIO ---
+# --- 3. INTERFACE (FRONTEND) ---
 
-# Sidebar de Navegação e Modos
-st.sidebar.title(" Harvard Mentor AI")
-page = st.sidebar.radio("Navegação", ["Introdução", "Chat com Mentor"])
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=100)
+st.sidebar.title("Harvard Impact AI")
+page = st.sidebar.radio("Menu", ["Introdução", "Mentor Virtual"])
 
 if page == "Introdução":
-    st.title("Bem-vindo ao Harvard Mentor AI ")
+    st.title("Domine os Fundamentos de Negócios 🚀")
     st.markdown("""
-    Este projeto aplica conhecimentos de **Marketing, Finanças, Negociação e Liderança** baseados no currículo *Harvard Business Impact*.
+    Bem-vindo. Esta ferramenta foi desenvolvida para democratizar o acesso ao conhecimento de elite sobre gestão.
     
-    ### O que este app faz?
-    Ele transforma o conteúdo estático das aulas em um mentor interativo utilizando **Inteligência Artificial (Google Gemini 1.5)**.
+    Tudo o que você verá aqui é baseado no currículo **Harvard Business Impact**, abrangendo:
+    * 📢 **Marketing:** Posicionamento e Estratégia.
+    * 💰 **Finanças:** Entendimento de balanços e ROI.
+    * 🤝 **Negociação:** Criação de valor e fechamento de acordos.
+    * leader **Liderança:** Gestão de equipes e inteligência emocional.
     
-    ### Como usar?
-    Vá para a aba **Chat com Mentor** e escolha um modo:
-    1.   **Consultor:** Traga um problema real e receba conselhos baseados na teoria.
-    2.   **Quiz:** Teste seus conhecimentos. O Mentor fará perguntas sobre o material.
-    3.   **Roleplay:** Simule situações difíceis (negociações, conflitos) e treine sua resposta.
+    ### Como funciona tecnicamente?
+    Este projeto utiliza **RAG (Retrieval-Augmented Generation)** alimentado pelo **Google Gemini 1.5 Flash**.
+    O conteúdo das aulas é processado em tempo real para responder às suas dúvidas específicas.
     
-    ---
-    *Disclaimer: Este é um projeto educacional de portfólio. O conteúdo base pertence à Harvard Business School Publishing.*
+    ### Escolha seu modo no menu lateral:
+    1.  **Consultor:** Para resolver problemas reais.
+    2.  **Quiz:** Para estudar ativamente.
+    3.  **Roleplay:** Para treinar sob pressão.
+    
+    *Projeto desenvolvido por [Seu Nome] para fins educacionais.*
     """)
 
-elif page == "Chat com Mentor":
-    # Carregar o PDF (apenas uma vez)
-    # IMPORTANTE: O nome do arquivo deve ser exato
-    pdf_text = load_pdf_text("Harvard Manager Mentor.pdf")
+elif page == "Mentor Virtual":
+    # Verifica API Key
+    if not api_key:
+        st.warning("⚠️ API Key não detectada. Se estiver rodando localmente, configure o .env ou secrets.toml.")
+        st.stop()
+    
+    # Carrega (e baixa se necessário) o PDF
+    pdf_filename = "Harvard Manager Mentor.pdf"
+    pdf_text = load_pdf_text(pdf_filename)
     
     if not pdf_text:
-        st.error("Erro: Arquivo PDF não encontrado. Verifique se o arquivo 'Harvard Manager Mentor.pdf' está na raiz do projeto.")
-        st.stop()
+        st.stop() # Mensagem de erro já é dada na função
 
-    if not api_key:
-        st.warning("Por favor, insira a API Key na barra lateral para começar.")
-        st.stop()
+    # Controles
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        mode = st.radio("Modo:", ["Consultor", "Quiz", "Roleplay"], horizontal=True)
+    with col2:
+        if st.button("Limpar Chat 🗑️"):
+            st.session_state.messages = []
+            st.rerun()
 
-    # Seletor de Modo
-    mode = st.radio("Escolha o Modo de Interação:", ["Consultor", "Quiz", "Roleplay"], horizontal=True)
-    
-    # Botão para limpar conversa se trocar de modo
-    if st.button("Reiniciar Conversa"):
-        st.session_state.messages = []
-        st.rerun()
-
-    # Inicializa o histórico visual
+    # Chat UI
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Exibe as mensagens anteriores na tela
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        avatar = "🤖" if message["role"] == "assistant" else "👤"
+        with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # Input do Usuário
-    if prompt := st.chat_input("Digite sua mensagem..."):
-        
+    if prompt := st.chat_input("Pergunte ao mentor ou inicie o cenário..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
 
-        # 2. Gera resposta
-        with st.chat_message("assistant"):
-            with st.spinner("O Mentor está analisando o material..."):
+        with st.chat_message("assistant", avatar="🤖"):
+            with st.spinner("Consultando a base de conhecimento de Harvard..."):
                 try:
-                    # Converte histórico do Streamlit para o formato do Google (opcional, mas o .start_chat lida bem)
-                    # Aqui simplificamos enviando o contexto no system prompt a cada chamada ou mantendo sessão
-                    # O Gemini 1.5 é stateless via API REST, mas a lib python mantém estado se usarmos chat.history.
-                    # Para simplificar o código no Streamlit (que recarrega tudo), recriamos a chamada.
-                    
+                    # Prepara histórico
                     history_gemini = [
                         {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
-                        for m in st.session_state.messages[:-1] 
+                        for m in st.session_state.messages[:-1]
                     ]
                     
-                    response_text = get_gemini_response(history_gemini, mode, pdf_text)
-                    st.markdown(response_text)
-                    
-                    # 3. Adiciona resposta ao histórico visual
-                    st.session_state.messages.append({"role": "assistant", "content": response_text})
-                    
+                    response = get_gemini_response(history_gemini, mode, pdf_text)
+                    st.markdown(response)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
                 except Exception as e:
-                    st.error(f"Ocorreu um erro na API: {e}")
+                    st.error(f"Erro na comunicação com a IA: {e}")
