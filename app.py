@@ -19,10 +19,7 @@ file_id = st.secrets.get("GDRIVE_FILE_ID")
 # --- 2. FUNÇÕES DE INFRAESTRUTURA ---
 
 def download_pdf_if_needed(filename):
-    """
-    Verifica se o PDF existe localmente. 
-    Se não existir (cenário do Streamlit Cloud), baixa do Google Drive.
-    """
+    """Verifica se o PDF existe ou baixa do Drive."""
     if os.path.exists(filename):
         return True
     
@@ -30,9 +27,8 @@ def download_pdf_if_needed(filename):
         st.error("Erro: ID do arquivo não configurado nos Secrets.")
         return False
 
-    with st.spinner("Baixando material de estudo seguro (Isso acontece apenas uma vez)..."):
+    with st.spinner("Baixando material de estudo seguro..."):
         try:
-            
             url = f'https://drive.google.com/uc?id={file_id}'
             gdown.download(url, filename, quiet=False)
             return True
@@ -42,7 +38,7 @@ def download_pdf_if_needed(filename):
 
 @st.cache_resource
 def load_pdf_text(pdf_path):
-    """Lê o PDF e extrai o texto. Usa cache para performance."""
+    """Lê o PDF e extrai o texto."""
     if not download_pdf_if_needed(pdf_path):
         return None
     
@@ -56,43 +52,31 @@ def load_pdf_text(pdf_path):
         st.error(f"Erro ao ler PDF: {e}")
         return None
 
-def get_gemini_response(history, mode, context_text):
-    # Definição das Personas (System Prompts)
+def get_gemini_response(chat_history_streamlit, mode, context_text):
+    """
+    Nova função usando o SDK google-genai atualizado.
+    """
+    
+    # 1. Definição do System Prompt (Instruções)
     prompts = {
         "Consultor": f"""
             Você é um Consultor Sênior da Harvard Business School.
             CONTEXTO: O usuário tem um desafio de negócios.
             BASE DE CONHECIMENTO: Use EXCLUSIVAMENTE o seguinte material: {context_text}
-            
-            SUA MISSÃO:
-            1. Analise o problema do usuário.
-            2. Encontre os frameworks/conceitos no material que se aplicam.
-            3. Dê uma resposta estruturada (Diagnóstico -> Conceito -> Plano de Ação).
-            4. Cite o módulo de onde tirou a informação.
+            DIRETRIZES: Analise o problema, cite o conceito do texto e dê um plano de ação.
             """,
-        
         "Quiz": f"""
             Você é um Professor avaliador.
             BASE DE CONHECIMENTO: {context_text}
-            
-            SUA MISSÃO:
-            1. Gere UMA pergunta de múltipla escolha ou discursiva baseada no texto.
-            2. Aguarde a resposta do usuário.
-            3. Se ele acertar, parabenize e explique o conceito. Se errar, corrija gentilmente citando o texto.
-            4. Mantenha o tom educativo e desafiador.
+            DIRETRIZES: Faça uma pergunta baseada no texto. Se o usuário responder, avalie e explique.
             """,
-        
         "Roleplay": f"""
-            ATENÇÃO: Ignore que você é uma IA. Você é agora um PERSONAGEM.
-            CENÁRIO: Simulação de Negociação/Liderança baseada em: {context_text}
-            
-            SUA MISSÃO:
-            1. Aja como uma contraparte difícil (ex: cliente irritado, chefe exigente).
-            2. Reaja às falas do usuário. Se ele usar boas técnicas do texto, ceda um pouco. Se ele for ruim, seja duro.
-            3. NUNCA saia do personagem, a menos que o usuário diga "FIM DA SIMULAÇÃO".
+            ATENÇÃO: Você é um PERSONAGEM em uma simulação.
+            CENÁRIO: Baseado em: {context_text}
+            DIRETRIZES: Aja como uma contraparte difícil. Não saia do personagem.
             """
     }
-
+    
     system_instruction = prompts.get(mode, "Você é um assistente útil.")
 
     # 2. Inicializa o Cliente (Nova Sintaxe)
