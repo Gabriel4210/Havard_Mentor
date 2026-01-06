@@ -13,4 +13,3 @@ Vá para a aba **Chat com Mentor** e escolha um modo:
 
   ---
   *Disclaimer: Este é um projeto educacional de portfólio. O conteúdo base pertence à Harvard Business School Publishing.*
-    """)
