@@ -172,3 +172,14 @@ elif page == "Mentor Virtual":
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+# --- COLAR NO FINAL DO APP.PY ---
+with st.sidebar.expander("🕵️ Debug: Modelos da Chave"):
+    try:
+        # Usa o client que já está instanciado na função ou cria um novo
+        debug_client = genai.Client(api_key=api_key)
+        for m in debug_client.models.list():
+            if "gemini" in m.name:
+                st.code(m.name.replace("models/", ""))
+    except Exception as e:
+        st.error(f"Erro: {e}")
