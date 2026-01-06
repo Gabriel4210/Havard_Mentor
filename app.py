@@ -5,7 +5,7 @@ from pypdf import PdfReader
 import os
 import gdown
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA E CSS ---
+# --- 1. CONFIGURAÇÃO DA PÁGINA E CSS (CORRIGIDO) ---
 st.set_page_config(
     page_title="Harvard Mentor AI",
     page_icon="🎓",
@@ -13,36 +13,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Customizado para dar um ar profissional (Harvard Style)
+# CSS Otimizado (Correção de Contraste e Espaço)
 st.markdown("""
 <style>
-    /* Cor de fundo da sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #f8f9fa;
+    /* 1. Ajuste da Sidebar para ser mais compacta */
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 2rem;    /* Menos espaço no topo */
+        padding-bottom: 1rem; /* Menos espaço no final */
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
-    /* Estilo dos botões de ação rápida */
+    
+    /* 2. Botões Estilizados (Harvard Crimson) */
     .stButton button {
         width: 100%;
-        border-radius: 8px;
-        height: 3em;
-        background-color: white;
-        border: 1px solid #A51C30; /* Harvard Crimson */
-        color: #A51C30;
+        border-radius: 6px;
+        height: 2.8em;
+        background-color: #ffffff; /* Fundo branco no botão */
+        border: 1px solid #A51C30; /* Borda Vermelha */
+        color: #A51C30;            /* Texto Vermelho */
         font-weight: 600;
+        transition: 0.3s;
     }
+    
+    /* Efeito ao passar o mouse (Hover) */
     .stButton button:hover {
         background-color: #A51C30;
         color: white;
         border: 1px solid #A51C30;
     }
-    /* Título principal */
-    h1 {
-        color: #1e1e1e;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    /* Chat bubbles */
-    .stChatMessage {
-        background-color: transparent;
+
+    /* 3. Tira o espaço extra do topo da página principal também */
+    .block-container {
+        padding-top: 2rem; 
     }
 </style>
 """, unsafe_allow_html=True)
