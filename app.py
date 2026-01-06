@@ -5,29 +5,61 @@ from pypdf import PdfReader
 import os
 import gdown
 
-# Configuração da Página
+# --- 1. CONFIGURAÇÃO DA PÁGINA E CSS ---
 st.set_page_config(
     page_title="Harvard Mentor AI",
     page_icon="🎓",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- 1. CONFIGURAÇÃO DE SEGREDOS ---
+# CSS Customizado para dar um ar profissional (Harvard Style)
+st.markdown("""
+<style>
+    /* Cor de fundo da sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+    }
+    /* Estilo dos botões de ação rápida */
+    .stButton button {
+        width: 100%;
+        border-radius: 8px;
+        height: 3em;
+        background-color: white;
+        border: 1px solid #A51C30; /* Harvard Crimson */
+        color: #A51C30;
+        font-weight: 600;
+    }
+    .stButton button:hover {
+        background-color: #A51C30;
+        color: white;
+        border: 1px solid #A51C30;
+    }
+    /* Título principal */
+    h1 {
+        color: #1e1e1e;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    /* Chat bubbles */
+    .stChatMessage {
+        background-color: transparent;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 2. CONFIGURAÇÃO DE SEGREDOS ---
 api_key = st.secrets.get("GOOGLE_API_KEY")
 file_id = st.secrets.get("GDRIVE_FILE_ID")
 
-# --- 2. FUNÇÕES DE INFRAESTRUTURA ---
+# --- 3. FUNÇÕES DE INFRAESTRUTURA ---
 
 def download_pdf_if_needed(filename):
-    """Verifica se o PDF existe ou baixa do Drive."""
     if os.path.exists(filename):
         return True
-    
     if not file_id:
         st.error("Erro: ID do arquivo não configurado nos Secrets.")
         return False
-
-    with st.spinner("Baixando material de estudo seguro..."):
+    with st.spinner("Baixando biblioteca de Harvard..."):
         try:
             url = f'https://drive.google.com/uc?id={file_id}'
             gdown.download(url, filename, quiet=False)
@@ -38,10 +70,8 @@ def download_pdf_if_needed(filename):
 
 @st.cache_resource
 def load_pdf_text(pdf_path):
-    """Lê o PDF e extrai o texto."""
     if not download_pdf_if_needed(pdf_path):
         return None
-    
     try:
         reader = PdfReader(pdf_path)
         text = ""
@@ -53,38 +83,32 @@ def load_pdf_text(pdf_path):
         return None
 
 def get_gemini_response(chat_history_streamlit, mode, context_text):
-    """
-    Nova função usando o SDK google-genai atualizado.
-    """
-    
-    # 1. Definição do System Prompt (Instruções)
     prompts = {
         "Consultor": f"""
             Você é um Consultor Sênior da Harvard Business School.
             CONTEXTO: O usuário tem um desafio de negócios.
             BASE DE CONHECIMENTO: Use EXCLUSIVAMENTE o seguinte material: {context_text}
-            DIRETRIZES: Analise o problema, cite o conceito do texto e dê um plano de ação.
+            DIRETRIZES: 
+            - Seja extremamente prático e direto.
+            - Estruture a resposta em tópicos.
+            - Cite o conceito específico do texto.
             """,
         "Quiz": f"""
-            Você é um Professor avaliador.
+            Você é um Professor da Harvard.
             BASE DE CONHECIMENTO: {context_text}
-            DIRETRIZES: Faça uma pergunta baseada no texto. Se o usuário responder, avalie e explique.
+            DIRETRIZES: 
+            - Se o usuário pedir um quiz, faça UMA pergunta de múltipla escolha difícil.
+            - Se ele responder, avalie e explique a lógica.
             """,
         "Roleplay": f"""
-            ATENÇÃO: Você é um PERSONAGEM em uma simulação.
+            ATENÇÃO: Ignore que é uma IA. Você é um PERSONAGEM.
             CENÁRIO: Baseado em: {context_text}
-            DIRETRIZES: Aja como uma contraparte difícil. Não saia do personagem.
+            DIRETRIZES: Aja como uma contraparte difícil (cliente, chefe, fornecedor).
             """
     }
     
     system_instruction = prompts.get(mode, "Você é um assistente útil.")
-
-    # 2. Inicializa o Cliente (Nova Sintaxe)
     client = genai.Client(api_key=api_key)
-
-    # 3. Converte histórico do Streamlit para o formato da Google
-    # Streamlit usa: {"role": "user/assistant", "content": "texto"}
-    # Google GenAI usa: types.Content(role="user/model", parts=[...])
     
     contents = []
     for msg in chat_history_streamlit:
@@ -96,15 +120,13 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             )
         )
 
-    # 4. Configuração da Geração
     generate_content_config = types.GenerateContentConfig(
-        temperature=0.6,
+        temperature=0.5,
         top_p=0.95,
-        max_output_tokens=20000,
+        max_output_tokens=2048,
         system_instruction=system_instruction,
     )
 
-    # 5. Chamada ao Modelo
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -115,60 +137,100 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
     except Exception as e:
         return f"Erro na API Google: {str(e)}"
 
-# --- 3. INTERFACE (FRONTEND) ---
+# --- 4. INTERFACE (FRONTEND) ---
 
-st.sidebar.title("Harvard Impact AI")
-page = st.sidebar.radio("Menu", ["Introdução", "Mentor Virtual"])
-
-if page == "Introdução":
-    st.title("Domine os Fundamentos de Negócios 🚀")
-    st.markdown("""
-    Bem-vindo ao seu Mentor de Negócios baseado no currículo de Harvard.
-    Utilizando a tecnologia **Google Gemini 2.5 Flash**.
+# Sidebar: Controles e Branding
+with st.sidebar:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=80)
+    st.title("Mentor AI")
+    st.markdown("---")
     
-    Escolha seu modo no menu lateral:
-    1.  **Consultor:** Resolução de problemas.
-    2.  **Quiz:** Estudo ativo.
-    3.  **Roleplay:** Simulação prática.
-    """)
-
-elif page == "Mentor Virtual":
-    if not api_key:
-        st.warning("⚠️ API Key não detectada nos Secrets.")
-        st.stop()
+    st.subheader("⚙️ Configuração")
+    mode = st.radio(
+        "Modo de Interação:", 
+        ["Consultor", "Quiz", "Roleplay"], 
+        captions=["Resolva problemas", "Teste seu conhecimento", "Simule cenários"]
+    )
     
-    pdf_filename = "Harvard Manager Mentor.pdf"
-    pdf_text = load_pdf_text(pdf_filename)
-    
-    if not pdf_text:
-        st.stop()
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        mode = st.radio("Modo:", ["Consultor", "Quiz", "Roleplay"], horizontal=True)
-    with col2:
-        if st.button("Limpar Chat 🗑️"):
-            st.session_state.messages = []
-            st.rerun()
-
-    if "messages" not in st.session_state:
+    st.markdown("---")
+    if st.button("🔄 Reiniciar Conversa"):
         st.session_state.messages = []
+        st.rerun()
+    
+    st.markdown("---")
+    st.caption("Powered by Google Gemini 2.5 Flash \nBased on Harvard Business Impact")
 
-    for message in st.session_state.messages:
-        avatar = "🤖" if message["role"] == "assistant" else "👤"
-        with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
+# Lógica Principal
+if not api_key:
+    st.warning("⚠️ API Key não detectada.")
+    st.stop()
 
-    if prompt := st.chat_input("Digite sua mensagem..."):
-        # Adiciona mensagem do usuário ao histórico visual
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(prompt)
+pdf_text = load_pdf_text("Harvard Manager Mentor.pdf")
+if not pdf_text:
+    st.stop()
 
-        with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("Analisando..."):
-                # Passa o histórico completo + nova mensagem (já inclusa no state)
-                response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
-                
-                st.markdown(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
+# Inicializa Session State
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# --- TELA DE BOAS-VINDAS (Se o chat estiver vazio) ---
+if len(st.session_state.messages) == 0:
+    st.title("Bem-vindo ao Harvard Mentor AI 🎓")
+    st.markdown(f"#### Seu assistente de elite para *Marketing, Finanças, Negociação e Liderança*.")
+    st.markdown("Não sabe por onde começar? Escolha uma opção abaixo baseada no modo **" + mode + "**:")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    # Lógica de Sugestões Inteligentes
+    suggestion = None
+    if mode == "Consultor":
+        if col1.button("📉 Estratégia de Preço"):
+            suggestion = "Como definir o preço de um novo produto premium em um mercado saturado segundo o material?"
+        if col2.button("🤝 Negociação Difícil"):
+            suggestion = "Quais são as melhores táticas para negociar com um fornecedor que tem monopólio?"
+        if col3.button("📊 Análise Financeira"):
+            suggestion = "Explique a diferença entre Fluxo de Caixa e Lucro como se eu fosse um CEO iniciante."
+            
+    elif mode == "Quiz":
+        if col1.button("🎲 Quiz Aleatório"):
+            suggestion = "Faça uma pergunta difícil de múltipla escolha sobre Liderança."
+        if col2.button("💰 Quiz de Finanças"):
+            suggestion = "Teste meu conhecimento sobre ROI e Payback."
+        if col3.button("📢 Quiz de Marketing"):
+            suggestion = "Me faça uma pergunta sobre os 4 Ps do Marketing."
+
+    elif mode == "Roleplay":
+        st.info("No modo Roleplay, o Mentor vai atuar como um personagem. Escolha o cenário:")
+        if col1.button("😡 Cliente Irritado"):
+            suggestion = "Inicie uma simulação onde você é um cliente furioso porque a entrega atrasou. Eu sou o gerente."
+        if col2.button("💼 Chefe Exigente"):
+            suggestion = "Atue como meu chefe pedindo cortes de orçamento impossíveis. Eu preciso defender meu time."
+        if col3.button("🤑 Investidor Cético"):
+            suggestion = "Você é um investidor Shark Tank. Eu estou tentando vender minha ideia. Comece me questionando."
+
+    # Se clicou em algum botão, já envia a mensagem
+    if suggestion:
+        st.session_state.messages.append({"role": "user", "content": suggestion})
+        st.rerun()
+
+# --- EXIBIÇÃO DO CHAT ---
+else:
+    # Mostra título menor quando já tem chat
+    st.subheader(f"Conversando com: Mentor ({mode})")
+
+for message in st.session_state.messages:
+    avatar = "🤖" if message["role"] == "assistant" else "👤"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
+
+# Input do Usuário
+if prompt := st.chat_input("Digite sua dúvida ou resposta..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("Consultando material de Harvard..."):
+            response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
+            st.markdown(response_text)
+            st.session_state.messages.append({"role": "assistant", "content": response_text})
