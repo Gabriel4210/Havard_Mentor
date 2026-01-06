@@ -98,7 +98,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
 
     # 4. Configuração da Geração
     generate_content_config = types.GenerateContentConfig(
-        temperature=0.7,
+        temperature=0.6,
         top_p=0.95,
         max_output_tokens=2000,
         system_instruction=system_instruction,
@@ -107,7 +107,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
     # 5. Chamada ao Modelo
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=contents,
             config=generate_content_config
         )
@@ -124,7 +124,7 @@ if page == "Introdução":
     st.title("Domine os Fundamentos de Negócios 🚀")
     st.markdown("""
     Bem-vindo ao seu Mentor de Negócios baseado no currículo de Harvard.
-    Utilizando a tecnologia **Google Gemini 1.5 Flash**.
+    Utilizando a tecnologia **Google Gemini 2.5 Flash**.
     
     Escolha seu modo no menu lateral:
     1.  **Consultor:** Resolução de problemas.
@@ -172,14 +172,3 @@ elif page == "Mentor Virtual":
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
-
-# --- COLAR NO FINAL DO APP.PY ---
-with st.sidebar.expander("🕵️ Debug: Modelos da Chave"):
-    try:
-        # Usa o client que já está instanciado na função ou cria um novo
-        debug_client = genai.Client(api_key=api_key)
-        for m in debug_client.models.list():
-            if "gemini" in m.name:
-                st.code(m.name.replace("models/", ""))
-    except Exception as e:
-        st.error(f"Erro: {e}")
