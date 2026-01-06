@@ -120,7 +120,7 @@ if page == "Introdução":
     * 📢 **Marketing:** Posicionamento e Estratégia.
     * 💰 **Finanças:** Entendimento de balanços e ROI.
     * 🤝 **Negociação:** Criação de valor e fechamento de acordos.
-    * leader **Liderança:** Gestão de equipes e inteligência emocional.
+    * 🧠 **Liderança:** Gestão de equipes e inteligência emocional.
     
     ### Como funciona tecnicamente?
     Este projeto utiliza **RAG (Retrieval-Augmented Generation)** alimentado pelo **Google Gemini 1.5 Flash**.
@@ -131,7 +131,7 @@ if page == "Introdução":
     2.  **Quiz:** Para estudar ativamente.
     3.  **Roleplay:** Para treinar sob pressão.
     
-    *Projeto desenvolvido por [Seu Nome] para fins educacionais.*
+    *Projeto desenvolvido por Gabriel Penha para fins educacionais.*
     """)
 
 elif page == "Mentor Virtual":
