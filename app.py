@@ -172,17 +172,3 @@ elif page == "Mentor Virtual":
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
-
-# --- DEBUG: LISTAR MODELOS DISPONÍVEIS ---
-# Coloque isso temporariamente no seu código para ver a lista real
-with st.sidebar.expander("🔧 Debug: Modelos Disponíveis"):
-    try:
-        client = genai.Client(api_key=api_key)
-        # Tenta listar os modelos
-        models = client.models.list()
-        for m in models:
-            # Filtra apenas os que geram texto
-            if "generateContent" in m.supported_generation_methods:
-                st.code(m.name.replace("models/", ""))
-    except Exception as e:
-        st.error(f"Erro ao listar modelos: {e}")
