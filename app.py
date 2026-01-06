@@ -172,7 +172,6 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
     generate_content_config = types.GenerateContentConfig(
         temperature=0.5,
         top_p=0.95,
-        max_output_tokens=2048,
         system_instruction=system_instruction,
     )
 
