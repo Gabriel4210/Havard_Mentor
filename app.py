@@ -1,8 +1,9 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from pypdf import PdfReader
 import os
-import gdown  
+import gdown
 
 # Configuração da Página
 st.set_page_config(
@@ -94,60 +95,70 @@ def get_gemini_response(history, mode, context_text):
 
     system_instruction = prompts.get(mode, "Você é um assistente útil.")
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=system_instruction
-    )
+    # 2. Inicializa o Cliente (Nova Sintaxe)
+    client = genai.Client(api_key=api_key)
+
+    # 3. Converte histórico do Streamlit para o formato da Google
+    # Streamlit usa: {"role": "user/assistant", "content": "texto"}
+    # Google GenAI usa: types.Content(role="user/model", parts=[...])
     
-    # Recria o histórico para a API
-    chat = model.start_chat(history=history)
-    response = chat.send_message(st.session_state.messages[-1]["content"])
-    return response.text
+    contents = []
+    for msg in chat_history_streamlit:
+        role = "user" if msg["role"] == "user" else "model"
+        contents.append(
+            types.Content(
+                role=role,
+                parts=[types.Part.from_text(text=msg["content"])]
+            )
+        )
+
+    # 4. Configuração da Geração
+    generate_content_config = types.GenerateContentConfig(
+        temperature=0.7,
+        top_p=0.95,
+        max_output_tokens=2000,
+        system_instruction=system_instruction,
+    )
+
+    # 5. Chamada ao Modelo
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=contents,
+            config=generate_content_config
+        )
+        return response.text
+    except Exception as e:
+        return f"Erro na API Google: {str(e)}"
 
 # --- 3. INTERFACE (FRONTEND) ---
 
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=100)
 st.sidebar.title("Harvard Impact AI")
 page = st.sidebar.radio("Menu", ["Introdução", "Mentor Virtual"])
 
 if page == "Introdução":
     st.title("Domine os Fundamentos de Negócios 🚀")
     st.markdown("""
-    Bem-vindo. Esta ferramenta foi desenvolvida para democratizar o acesso ao conhecimento de elite sobre gestão.
+    Bem-vindo ao seu Mentor de Negócios baseado no currículo de Harvard.
+    Utilizando a tecnologia **Google Gemini 1.5 Flash**.
     
-    Tudo o que você verá aqui é baseado no currículo **Harvard Business Impact**, abrangendo:
-    * 📢 **Marketing:** Posicionamento e Estratégia.
-    * 💰 **Finanças:** Entendimento de balanços e ROI.
-    * 🤝 **Negociação:** Criação de valor e fechamento de acordos.
-    * 🧠 **Liderança:** Gestão de equipes e inteligência emocional.
-    
-    ### Como funciona tecnicamente?
-    Este projeto utiliza **RAG (Retrieval-Augmented Generation)** alimentado pelo **Google Gemini 1.5 Flash**.
-    O conteúdo das aulas é processado em tempo real para responder às suas dúvidas específicas.
-    
-    ### Escolha seu modo no menu lateral:
-    1.  **Consultor:** Para resolver problemas reais.
-    2.  **Quiz:** Para estudar ativamente.
-    3.  **Roleplay:** Para treinar sob pressão.
-    
-    *Projeto desenvolvido por Gabriel Penha para fins educacionais.*
+    Escolha seu modo no menu lateral:
+    1.  **Consultor:** Resolução de problemas.
+    2.  **Quiz:** Estudo ativo.
+    3.  **Roleplay:** Simulação prática.
     """)
 
 elif page == "Mentor Virtual":
-    # Verifica API Key
     if not api_key:
-        st.warning("⚠️ API Key não detectada. Se estiver rodando localmente, configure o .env ou secrets.toml.")
+        st.warning("⚠️ API Key não detectada nos Secrets.")
         st.stop()
     
-    # Carrega (e baixa se necessário) o PDF
     pdf_filename = "Harvard Manager Mentor.pdf"
     pdf_text = load_pdf_text(pdf_filename)
     
     if not pdf_text:
-        st.stop() # Mensagem de erro já é dada na função
+        st.stop()
 
-    # Controles
     col1, col2 = st.columns([3, 1])
     with col1:
         mode = st.radio("Modo:", ["Consultor", "Quiz", "Roleplay"], horizontal=True)
@@ -156,7 +167,6 @@ elif page == "Mentor Virtual":
             st.session_state.messages = []
             st.rerun()
 
-    # Chat UI
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -165,22 +175,16 @@ elif page == "Mentor Virtual":
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Pergunte ao mentor ou inicie o cenário..."):
+    if prompt := st.chat_input("Digite sua mensagem..."):
+        # Adiciona mensagem do usuário ao histórico visual
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
 
         with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("Consultando a base de conhecimento de Harvard..."):
-                try:
-                    # Prepara histórico
-                    history_gemini = [
-                        {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
-                        for m in st.session_state.messages[:-1]
-                    ]
-                    
-                    response = get_gemini_response(history_gemini, mode, pdf_text)
-                    st.markdown(response)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                except Exception as e:
-                    st.error(f"Erro na comunicação com a IA: {e}")
+            with st.spinner("Analisando..."):
+                # Passa o histórico completo + nova mensagem (já inclusa no state)
+                response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
+                
+                st.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
