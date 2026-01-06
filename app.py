@@ -7,11 +7,9 @@ import os
 st.set_page_config(page_title="Harvard Mentor AI", layout="wide")
 
 # --- 1. CONFIGURAÇÃO E SEGURANÇA ---
-# Em produção (Streamlit Cloud), pegaremos a chave dos "Secrets". 
-# Localmente, você pode usar uma variável de ambiente ou input manual.
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-# Se não tiver chave configurada, pede na tela (bom para testar)
+# Se não tiver chave configurada, pede na tela
 if not api_key:
     api_key = st.sidebar.text_input("Insira sua Google API Key", type="password")
 
@@ -25,7 +23,6 @@ def load_pdf_text(pdf_path):
     
     reader = PdfReader(pdf_path)
     text = ""
-    # Itera pelas páginas extraindo texto
     for page in reader.pages:
         text += page.extract_text() + "\n"
     return text
@@ -33,7 +30,7 @@ def load_pdf_text(pdf_path):
 def get_gemini_response(history, mode, context_text):
     """Envia o histórico e o contexto para o Gemini."""
     
-    # Define a 'Persona' baseada no modo escolhido
+    
     if mode == "Consultor":
         system_instruction = f"""
         Você é um Consultor Sênior formado com o material do 'Harvard Manager Mentor'.
@@ -70,7 +67,6 @@ def get_gemini_response(history, mode, context_text):
 
     # Configura o modelo
     genai.configure(api_key=api_key)
-    # Usamos o flash por ser rápido e ter contexto longo
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
         system_instruction=system_instruction
@@ -78,10 +74,6 @@ def get_gemini_response(history, mode, context_text):
     
     # Inicia o chat com o histórico
     chat = model.start_chat(history=history)
-    
-    # Pega a última mensagem do usuário (que já foi adicionada ao histórico visual, mas precisa ser enviada ao modelo)
-    # Nota: A lib do Google gerencia o histórico internamente no objeto 'chat', 
-    # mas aqui vamos enviar a mensagem atual para obter a resposta.
     response = chat.send_message(st.session_state.messages[-1]["content"])
     
     return response.text
@@ -89,11 +81,11 @@ def get_gemini_response(history, mode, context_text):
 # --- 3. INTERFACE DO USUÁRIO ---
 
 # Sidebar de Navegação e Modos
-st.sidebar.title("🎓 Harvard Mentor AI")
+st.sidebar.title(" Harvard Mentor AI")
 page = st.sidebar.radio("Navegação", ["Introdução", "Chat com Mentor"])
 
 if page == "Introdução":
-    st.title("Bem-vindo ao Harvard Mentor AI 🚀")
+    st.title("Bem-vindo ao Harvard Mentor AI ")
     st.markdown("""
     Este projeto aplica conhecimentos de **Marketing, Finanças, Negociação e Liderança** baseados no currículo *Harvard Business Impact*.
     
@@ -142,7 +134,7 @@ elif page == "Chat com Mentor":
 
     # Input do Usuário
     if prompt := st.chat_input("Digite sua mensagem..."):
-        # 1. Adiciona msg do usuário ao visual
+        
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -158,7 +150,7 @@ elif page == "Chat com Mentor":
                     
                     history_gemini = [
                         {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
-                        for m in st.session_state.messages[:-1] # Pega tudo menos a atual que será enviada
+                        for m in st.session_state.messages[:-1] 
                     ]
                     
                     response_text = get_gemini_response(history_gemini, mode, pdf_text)
