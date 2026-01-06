@@ -176,16 +176,16 @@ if not pdf_text:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- TELA DE BOAS-VINDAS (Se o chat estiver vazio) ---
+# --- TELA DE BOAS-VINDAS (Icebreakers) ---
 if len(st.session_state.messages) == 0:
     st.title("Bem-vindo ao Harvard Mentor AI 🎓")
     st.markdown(f"#### Seu assistente de elite para *Marketing, Finanças, Negociação e Liderança*.")
-    st.markdown("Não sabe por onde começar? Escolha uma opção abaixo baseada no modo **" + mode + "**:")
     
     col1, col2, col3 = st.columns(3)
     
-    # Lógica de Sugestões Inteligentes
     suggestion = None
+    
+    # Lógica de Sugestões baseada no Modo
     if mode == "Consultor":
         if col1.button("📉 Estratégia de Preço"):
             suggestion = "Como definir o preço de um novo produto premium em um mercado saturado segundo o material?"
@@ -203,7 +203,7 @@ if len(st.session_state.messages) == 0:
             suggestion = "Me faça uma pergunta sobre os 4 Ps do Marketing."
 
     elif mode == "Roleplay":
-        st.info("No modo Roleplay, o Mentor vai atuar como um personagem. Escolha o cenário:")
+        st.info("Escolha o cenário para iniciar a simulação:")
         if col1.button("😡 Cliente Irritado"):
             suggestion = "Inicie uma simulação onde você é um cliente furioso porque a entrega atrasou. Eu sou o gerente."
         if col2.button("💼 Chefe Exigente"):
@@ -211,29 +211,41 @@ if len(st.session_state.messages) == 0:
         if col3.button("🤑 Investidor Cético"):
             suggestion = "Você é um investidor Shark Tank. Eu estou tentando vender minha ideia. Comece me questionando."
 
-    # Se clicou em algum botão, já envia a mensagem
+    # Se clicou no botão: Adiciona ao histórico e Recarrega para processar
     if suggestion:
         st.session_state.messages.append({"role": "user", "content": suggestion})
         st.rerun()
 
 # --- EXIBIÇÃO DO CHAT ---
 else:
-    # Mostra título menor quando já tem chat
     st.subheader(f"Conversando com: Mentor ({mode})")
 
+# 1. Renderiza o histórico existente
 for message in st.session_state.messages:
     avatar = "🤖" if message["role"] == "assistant" else "👤"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
-# Input do Usuário
+# 2. Captura nova entrada pelo Chat Input
 if prompt := st.chat_input("Digite sua dúvida ou resposta..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
+# 3. LÓGICA DE RESPOSTA AUTOMÁTICA (O CORAÇÃO DA CORREÇÃO)
+# Verifica se a última mensagem é do usuário. Se for, a IA precisa responder.
+# Isso funciona tanto para o 'chat_input' quanto para o 'button' (icebreaker).
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Consultando material de Harvard..."):
-            response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
-            st.markdown(response_text)
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            try:
+                response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
+                st.markdown(response_text)
+                
+                # Adiciona a resposta da IA ao histórico
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
+                
+                # Opcional: Força um rerun para garantir que o estado fique limpo, 
+                # mas geralmente não é estritamente necessário aqui.
+            except Exception as e:
+                st.error(f"Erro ao gerar resposta: {e}")
