@@ -223,11 +223,10 @@ with st.sidebar:
     with col_text:
         st.markdown("### **Mentor AI**")
     
-    # 2. O CONTEXTO (A Nova Adição)
-    # CORREÇÃO: O expander deve estar INDENTADO para ficar DENTRO da sidebar
+    # 2. O CONTEXTO 
     with st.expander("📖 O que é este app?", expanded=False):
         st.markdown("""
-        <div style="font-size: 12px; color: #555;">
+        <div style="font-size: 12px; opacity: 0.8;">
         Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
         <br><br>
         <b>Domine 4 Pilares:</b>
@@ -268,7 +267,7 @@ with st.sidebar:
 
     # Rodapé
     st.markdown(
-        "<div style='text-align: center; color: grey; font-size: 11px; margin-top: 20px;'>Powered by Gemini 2.5 Flash & Harvard Business Publishing</div>", 
+        "<div style='text-align: center; opacity: 0.6; font-size: 11px; margin-top: 20px;'>Powered by Gemini 2.5 Flash & Harvard Business Publishing</div>", 
         unsafe_allow_html=True
     )
 
@@ -293,7 +292,7 @@ if "messages" not in st.session_state:
 if len(st.session_state.messages) == 0:
     # Usei a cor Crimson de Harvard (#A51C30) no título
     st.markdown("<h1 style='text-align: center; color: #A51C30;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #555;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.2rem; opacity: 0.7;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
     st.write("") # Espaço vazio
     
     # Sugestões inteligentes (Icebreakers)
