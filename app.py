@@ -225,18 +225,21 @@ with st.sidebar:
     
     # 2. O CONTEXTO (A Nova Adição)
     # Usamos container com borda ou expander para separar visualmente
-    with st.expander("📖 O que é este app?", expanded=False):
-        st.caption("""
-        Este é um Mentor Virtual treinado com o currículo **Harvard Business Impact**.
-        
-        **Domine 4 Pilares:**
-        \n💰 **Finanças:** ROI, DRE, Fluxo de Caixa.
-        \n📢 **Marketing:** Estratégia, 4Ps, Branding.
-        \n🤝 **Negociação:** BATNA, ZOPA, Acordos.
-        \n👔 **Liderança:** Gestão de Times e Crises.
-        
-        *Use os modos abaixo para interagir.*
-        """)
+with st.expander("📖 O que é este app?", expanded=False):
+        st.markdown("""
+        <div style="font-size: 12px; color: #555;">
+        Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
+        <br><br>
+        <b>Domine 4 Pilares:</b>
+        <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
+            <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
+            <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
+            <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
+            <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
+        </ul>
+        <i>Use os modos abaixo para interagir.</i>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -287,7 +290,7 @@ if "messages" not in st.session_state:
 # --- TELA DE BOAS-VINDAS (Hero Section) ---
 # Só aparece se o chat estiver vazio
 if len(st.session_state.messages) == 0:
-    st.markdown("<h1 style='text-align: center; color: #1e1e1e;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #A51C30;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #555;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
     st.write("") # Espaço vazio
     
