@@ -115,9 +115,9 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             
             2. FORMATO DE RESPOSTA:
             → A resposta deve seguir estritamente esta estrutura:
-            [Diagnóstico]: Uma frase resumindo o problema raiz.
-            [Conceito Aplicado]: Qual framework ou conceito do texto base resolve isso (Cite o módulo/capítulo).
-            [Plano de Ação]: 3 passos táticos e numerados para execução imediata.
+            Uma frase resumindo o problema raiz.
+            Qual framework ou conceito do texto base resolve isso (Cite o módulo/capítulo).
+            Plano de Ação: 3 passos táticos e numerados para execução imediata.
             
             Exemplo de Resposta:
             "Sua equipe sofre de falta de alinhamento estratégico, não de falta de habilidade.
