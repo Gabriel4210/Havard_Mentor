@@ -224,32 +224,32 @@ with st.sidebar:
         st.markdown("### **Mentor AI**")
     
     # 2. O CONTEXTO (A Nova Adição)
-    # Usamos container com borda ou expander para separar visualmente
+    # CORREÇÃO: O expander deve estar INDENTADO para ficar DENTRO da sidebar
     with st.expander("📖 O que é este app?", expanded=False):
-            st.markdown("""
-            <div style="font-size: 12px; color: #555;">
-            Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
-            <br><br>
-            <b>Domine 4 Pilares:</b>
-            <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
-                <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
-                <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
-                <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
-                <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
-            </ul>
-            <i>Use os modos abaixo para interagir.</i>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
+        st.markdown("""
+        <div style="font-size: 12px; color: #555;">
+        Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
+        <br><br>
+        <b>Domine 4 Pilares:</b>
+        <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
+            <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
+            <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
+            <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
+            <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
+        </ul>
+        <i>Use os modos abaixo para interagir.</i>
+        </div>
+        """, unsafe_allow_html=True)
     
-        # 3. Controles
-        st.markdown("**⚙️ Painel de Controle**")
-        mode = st.radio(
-            "Modo de Operação:", 
-            ["Consultor", "Quiz", "Roleplay"], 
-            label_visibility="collapsed"
-        )
+    st.markdown("---")
+    
+    # 3. Controles
+    st.markdown("**⚙️ Painel de Controle**")
+    mode = st.radio(
+        "Modo de Operação:", 
+        ["Consultor", "Quiz", "Roleplay"], 
+        label_visibility="collapsed"
+    )
     
     # Explicação dinâmica do modo (UX)
     if mode == "Consultor":
@@ -279,6 +279,7 @@ if not api_key:
     st.stop()
 
 # Carregamento do PDF (Blindado com pdfplumber)
+# Certifique-se que a função load_pdf_text já foi definida antes no seu código
 pdf_text = load_pdf_text("Harvard Manager Mentor.pdf")
 if not pdf_text:
     st.stop()
@@ -290,6 +291,7 @@ if "messages" not in st.session_state:
 # --- TELA DE BOAS-VINDAS (Hero Section) ---
 # Só aparece se o chat estiver vazio
 if len(st.session_state.messages) == 0:
+    # Usei a cor Crimson de Harvard (#A51C30) no título
     st.markdown("<h1 style='text-align: center; color: #A51C30;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #555;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
     st.write("") # Espaço vazio
@@ -353,6 +355,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         # Feedback visual de pensamento
         with st.spinner("Analisando frameworks de Harvard..."):
             try:
+                # Chama a função de resposta (que deve estar definida no início do arquivo)
                 response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
