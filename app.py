@@ -225,31 +225,31 @@ with st.sidebar:
     
     # 2. O CONTEXTO (A Nova Adição)
     # Usamos container com borda ou expander para separar visualmente
-with st.expander("📖 O que é este app?", expanded=False):
-        st.markdown("""
-        <div style="font-size: 12px; color: #555;">
-        Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
-        <br><br>
-        <b>Domine 4 Pilares:</b>
-        <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
-            <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
-            <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
-            <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
-            <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
-        </ul>
-        <i>Use os modos abaixo para interagir.</i>
-        </div>
-        """, unsafe_allow_html=True)
+    with st.expander("📖 O que é este app?", expanded=False):
+            st.markdown("""
+            <div style="font-size: 12px; color: #555;">
+            Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
+            <br><br>
+            <b>Domine 4 Pilares:</b>
+            <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
+                <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
+                <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
+                <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
+                <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
+            </ul>
+            <i>Use os modos abaixo para interagir.</i>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
     
-    st.markdown("---")
-    
-    # 3. Controles
-    st.markdown("**⚙️ Painel de Controle**")
-    mode = st.radio(
-        "Modo de Operação:", 
-        ["Consultor", "Quiz", "Roleplay"], 
-        label_visibility="collapsed"
-    )
+        # 3. Controles
+        st.markdown("**⚙️ Painel de Controle**")
+        mode = st.radio(
+            "Modo de Operação:", 
+            ["Consultor", "Quiz", "Roleplay"], 
+            label_visibility="collapsed"
+        )
     
     # Explicação dinâmica do modo (UX)
     if mode == "Consultor":
