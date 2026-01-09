@@ -214,110 +214,144 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
 
 # --- 4. INTERFACE (FRONTEND) ---
 
-# Sidebar: Controles e Branding
+# --- SIDEBAR (BARRA LATERAL) REFINADA ---
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=80)
-    st.title("Mentor AI")
+    # 1. Cabeçalho e Branding
+    col_logo, col_text = st.columns([1, 4])
+    with col_logo:
+        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=45)
+    with col_text:
+        st.markdown("### **Mentor AI**")
+    
+    # 2. O CONTEXTO (A Nova Adição)
+    # Usamos container com borda ou expander para separar visualmente
+    with st.expander("📖 O que é este app?", expanded=False):
+        st.caption("""
+        Este é um Mentor Virtual treinado com o currículo **Harvard Business Impact**.
+        
+        **Domine 4 Pilares:**
+        \n💰 **Finanças:** ROI, DRE, Fluxo de Caixa.
+        \n📢 **Marketing:** Estratégia, 4Ps, Branding.
+        \n🤝 **Negociação:** BATNA, ZOPA, Acordos.
+        \n👔 **Liderança:** Gestão de Times e Crises.
+        
+        *Use os modos abaixo para interagir.*
+        """)
+    
     st.markdown("---")
     
-    st.subheader("⚙️ Configuração")
+    # 3. Controles
+    st.markdown("**⚙️ Painel de Controle**")
     mode = st.radio(
-        "Modo de Interação:", 
+        "Modo de Operação:", 
         ["Consultor", "Quiz", "Roleplay"], 
-        captions=["Resolva problemas", "Teste seu conhecimento", "Simule cenários"]
+        label_visibility="collapsed"
     )
     
-    st.markdown("---")
-    if st.button("🔄 Reiniciar Conversa"):
-        st.session_state.messages = []
-        st.rerun()
+    # Explicação dinâmica do modo (UX)
+    if mode == "Consultor":
+        st.info("💡 **Consultor:** Traga um problema real do seu trabalho e receba um plano de ação baseado em frameworks.")
+    elif mode == "Quiz":
+        st.info("🧠 **Quiz:** O Mentor fará perguntas difíceis (Case Method) para testar se você domina a teoria.")
+    elif mode == "Roleplay":
+        st.info("🎭 **Roleplay:** Simulação tensa. O Mentor será um personagem difícil (Chefe/Cliente) e você deve negociar.")
     
     st.markdown("---")
-    st.caption("Powered by Google Gemini 2.5 Flash \nBased on Harvard Business Impact")
+    
+    # Botão de Limpeza
+    if st.button("🗑️ Nova Conversa"):
+        st.session_state.messages = []
+        st.rerun()
 
-# Lógica Principal
+    # Rodapé
+    st.markdown(
+        "<div style='text-align: center; color: grey; font-size: 11px; margin-top: 20px;'>Powered by Gemini 2.5 Flash & Harvard Business Publishing</div>", 
+        unsafe_allow_html=True
+    )
+
+# --- LÓGICA PRINCIPAL ---
+
 if not api_key:
     st.warning("⚠️ API Key não detectada.")
     st.stop()
 
+# Carregamento do PDF (Blindado com pdfplumber)
 pdf_text = load_pdf_text("Harvard Manager Mentor.pdf")
 if not pdf_text:
     st.stop()
 
-# Inicializa Session State
+# Inicializa Histórico
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- TELA DE BOAS-VINDAS (Icebreakers) ---
+# --- TELA DE BOAS-VINDAS (Hero Section) ---
+# Só aparece se o chat estiver vazio
 if len(st.session_state.messages) == 0:
-    st.title("Bem-vindo ao Harvard Mentor AI 🎓")
-    st.markdown(f"#### Seu assistente de elite para *Marketing, Finanças, Negociação e Liderança*.")
+    st.markdown("<h1 style='text-align: center; color: #1e1e1e;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #555;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
+    st.write("") # Espaço vazio
     
+    # Sugestões inteligentes (Icebreakers)
     col1, col2, col3 = st.columns(3)
-    
     suggestion = None
     
-    # Lógica de Sugestões baseada no Modo
+    # Mostra botões diferentes dependendo do modo selecionado na sidebar
     if mode == "Consultor":
-        if col1.button("📉 Estratégia de Preço"):
+        st.markdown("##### 🚀 Comece resolvendo um problema:")
+        if st.button("📉 Precificação Premium", use_container_width=True):
             suggestion = "Como definir o preço de um novo produto premium em um mercado saturado segundo o material?"
-        if col2.button("🤝 Negociação Difícil"):
+        if st.button("🤝 Negociação com Monopólio", use_container_width=True):
             suggestion = "Quais são as melhores táticas para negociar com um fornecedor que tem monopólio?"
-        if col3.button("📊 Análise Financeira"):
+        if st.button("📊 Finanças para Não-Financeiros", use_container_width=True):
             suggestion = "Explique a diferença entre Fluxo de Caixa e Lucro como se eu fosse um CEO iniciante."
             
     elif mode == "Quiz":
-        if col1.button("🎲 Quiz Aleatório"):
-            suggestion = "Faça uma pergunta difícil de múltipla escolha sobre Liderança."
-        if col2.button("💰 Quiz de Finanças"):
-            suggestion = "Teste meu conhecimento sobre ROI e Payback."
-        if col3.button("📢 Quiz de Marketing"):
-            suggestion = "Me faça uma pergunta sobre os 4 Ps do Marketing."
+        st.markdown("##### 🧠 Teste seus conhecimentos:")
+        if st.button("🎲 Desafio de Liderança", use_container_width=True):
+            suggestion = "Faça uma pergunta difícil de múltipla escolha (Case Study) sobre Liderança e Gestão de Equipes."
+        if st.button("💰 Desafio Financeiro", use_container_width=True):
+            suggestion = "Crie um cenário de investimento e pergunte se devo usar ROI ou Payback."
+        if st.button("📢 Desafio de Marketing", use_container_width=True):
+            suggestion = "Me coloque em uma crise de PR (Relações Públicas) e pergunte qual a melhor saída."
 
     elif mode == "Roleplay":
-        st.info("Escolha o cenário para iniciar a simulação:")
-        if col1.button("😡 Cliente Irritado"):
-            suggestion = "Inicie uma simulação onde você é um cliente furioso porque a entrega atrasou. Eu sou o gerente."
-        if col2.button("💼 Chefe Exigente"):
-            suggestion = "Atue como meu chefe pedindo cortes de orçamento impossíveis. Eu preciso defender meu time."
-        if col3.button("🤑 Investidor Cético"):
-            suggestion = "Você é um investidor Shark Tank. Eu estou tentando vender minha ideia. Comece me questionando."
+        st.markdown("##### 🎭 Escolha seu oponente:")
+        if st.button("😡 Cliente Furioso", use_container_width=True):
+            suggestion = "Inicie uma simulação onde você é um cliente furioso porque a entrega atrasou. Eu sou o gerente. Seja duro."
+        if st.button("💼 Chefe Cortando Custos", use_container_width=True):
+            suggestion = "Atue como meu chefe pedindo cortes de orçamento irracionais. Eu preciso defender meu time."
+        if st.button("🦈 Investidor Shark", use_container_width=True):
+            suggestion = "Você é um investidor cético. Eu estou tentando vender minha ideia. Comece apontando falhas no meu plano."
 
-    # Se clicou no botão: Adiciona ao histórico e Recarrega para processar
     if suggestion:
         st.session_state.messages.append({"role": "user", "content": suggestion})
         st.rerun()
 
 # --- EXIBIÇÃO DO CHAT ---
 else:
-    st.subheader(f"Conversando com: Mentor ({mode})")
+    # Cabeçalho discreto durante a conversa
+    st.caption(f"Modo Atual: {mode} | Base de Conhecimento: Harvard Mentor")
 
-# 1. Renderiza o histórico existente
+# 1. Renderiza mensagens anteriores
 for message in st.session_state.messages:
     avatar = "🤖" if message["role"] == "assistant" else "👤"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
-# 2. Captura nova entrada pelo Chat Input
-if prompt := st.chat_input("Digite sua dúvida ou resposta..."):
+# 2. Input do usuário
+if prompt := st.chat_input("Digite sua dúvida, resposta ou comando..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-# 3. LÓGICA DE RESPOSTA AUTOMÁTICA 
-# Verifica se a última mensagem é do usuário. Se for, a IA precisa responder.
-# Isso funciona tanto para o 'chat_input' quanto para o 'button' (icebreaker).
+# 3. Geração de Resposta (Lógica corrigida fora do if prompt)
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant", avatar="🤖"):
-        with st.spinner("Consultando material de Harvard..."):
+        # Feedback visual de pensamento
+        with st.spinner("Analisando frameworks de Harvard..."):
             try:
                 response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
                 st.markdown(response_text)
-                
-                # Adiciona a resposta da IA ao histórico
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
-                
-                # Opcional: Força um rerun para garantir que o estado fique limpo, 
-                # mas geralmente não é estritamente necessário aqui.
             except Exception as e:
-                st.error(f"Erro ao gerar resposta: {e}")
+                st.error(f"Erro ao conectar com o Mentor: {e}")
