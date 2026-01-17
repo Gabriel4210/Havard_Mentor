@@ -23,13 +23,11 @@ texts = {
     "pt": {
         "title": "Mentor AI: Santander Business for All 🎓",
         "subtitle": "Consultor treinado no currículo Harvard ManageMentor®",
-        "description": """
-            Este mentor é um especialista virtual fundamentado **exclusivamente** no material do programa 
+        "description": """Este mentor é um especialista virtual fundamentado **exclusivamente** no material do programa 
             **Santander Open Academy: Business for All**. 
             
             O consultor tira dúvidas de negócio utilizando apenas as informações dos 6 cursos da Harvard ManageMentor®:
-            * **Business Fundamentals:** Marketing, Finanças, Negociação, Relacionamento com o Cliente e Liderança.
-        """,
+            * **Business Fundamentals:** Marketing, Finanças, Negociação, Relacionamento com o Cliente e Liderança.""",
         "sidebar_about": "📖 Sobre o Mentor",
         "sidebar_control": "**⚙️ Painel de Controle**",
         "mode_label": "Modo de Operação:",
@@ -48,12 +46,10 @@ texts = {
     "en": {
         "title": "Mentor AI: Santander Business for All 🎓",
         "subtitle": "Mentor trained on the Harvard ManageMentor® curriculum",
-        "description": """
-            This mentor is a virtual specialist based **exclusively** on the **Santander Open Academy: Business for All** program material. 
+        "description": """This mentor is a virtual specialist based **exclusively** on the **Santander Open Academy: Business for All** program material. 
             
             The consultant answers business questions using only the information from the 6 Harvard ManageMentor® courses:
-            * **Business Fundamentals:** Marketing, Finance, Negotiation, Customer Relations, and Leadership.
-        """,
+            * **Business Fundamentals:** Marketing, Finance, Negotiation, Customer Relations, and Leadership.""",
         "sidebar_about": "📖 About the Mentor",
         "sidebar_control": "**⚙️ Control Panel**",
         "mode_label": "Operation Mode:",
