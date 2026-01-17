@@ -14,40 +14,72 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inicialização do Idioma no Session State
+if "lang" not in st.session_state:
+    st.session_state.lang = "pt"
+
+# Dicionário de Traduções
+texts = {
+    "pt": {
+        "title": "Mentor AI: Santander Business for All 🎓",
+        "subtitle": "Consultor treinado no currículo Harvard ManageMentor®",
+        "description": """
+            Este mentor é um especialista virtual fundamentado **exclusivamente** no material do programa 
+            **Santander Open Academy: Business for All**. 
+            
+            O consultor tira dúvidas de negócio utilizando apenas as informações dos 6 cursos da Harvard ManageMentor®:
+            * **Business Fundamentals:** Marketing, Finanças, Negociação, Relacionamento com o Cliente e Liderança.
+        """,
+        "sidebar_about": "📖 Sobre o Mentor",
+        "sidebar_control": "**⚙️ Painel de Controle**",
+        "mode_label": "Modo de Operação:",
+        "new_chat": "🗑️ Nova Conversa",
+        "hero_subtitle": "Sua vantagem competitiva baseada nos fundamentos de Harvard.",
+        "input_placeholder": "Digite sua dúvida de negócio...",
+        "alert_api": "⚠️ API Key não detectada.",
+        "status_pdf": "Processando biblioteca de Harvard...",
+        "mode_consultant": "💡 **Consultor:** Receba diagnósticos e planos de ação baseados nos frameworks do curso.",
+        "mode_quiz": "🧠 **Quiz:** Teste seus conhecimentos sobre o conteúdo do programa.",
+        "mode_roleplay": "🎭 **Roleplay:** Treine negociação e liderança com um personagem cético.",
+        "suggestion_title_consultant": "##### 🚀 Resolva um problema de negócio:",
+        "suggestion_title_quiz": "##### 🧠 Teste sua base teórica:",
+        "suggestion_title_roleplay": "##### 🎭 Inicie uma simulação:"
+    },
+    "en": {
+        "title": "Mentor AI: Santander Business for All 🎓",
+        "subtitle": "Mentor trained on the Harvard ManageMentor® curriculum",
+        "description": """
+            This mentor is a virtual specialist based **exclusively** on the **Santander Open Academy: Business for All** program material. 
+            
+            The consultant answers business questions using only the information from the 6 Harvard ManageMentor® courses:
+            * **Business Fundamentals:** Marketing, Finance, Negotiation, Customer Relations, and Leadership.
+        """,
+        "sidebar_about": "📖 About the Mentor",
+        "sidebar_control": "**⚙️ Control Panel**",
+        "mode_label": "Operation Mode:",
+        "new_chat": "🗑️ New Conversation",
+        "hero_subtitle": "Your competitive advantage based on Harvard fundamentals.",
+        "input_placeholder": "Type your business question...",
+        "alert_api": "⚠️ API Key not detected.",
+        "status_pdf": "Processing Harvard library...",
+        "mode_consultant": "💡 **Consultant:** Get diagnostics and action plans based on course frameworks.",
+        "mode_quiz": "🧠 **Quiz:** Test your knowledge of the program content.",
+        "mode_roleplay": "🎭 **Roleplay:** Practice negotiation and leadership with a skeptical character.",
+        "suggestion_title_consultant": "##### 🚀 Solve a business problem:",
+        "suggestion_title_quiz": "##### 🧠 Test your theoretical basis:",
+        "suggestion_title_roleplay": "##### 🎭 Start a simulation:"
+    }
+}
+
+t = texts[st.session_state.lang]
+
 # CSS Otimizado
 st.markdown("""
 <style>
-    /* 1. Ajuste da Sidebar para ser mais compacta */
-    section[data-testid="stSidebar"] .block-container {
-        padding-top: 2rem;    /* Menos espaço no topo */
-        padding-bottom: 1rem; /* Menos espaço no final */
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    
-    /* 2. Botões Estilizados (Harvard Crimson) */
-    .stButton button {
-        width: 100%;
-        border-radius: 6px;
-        height: 2.8em;
-        background-color: #ffffff; /* Fundo branco no botão */
-        border: 1px solid #A51C30; /* Borda Vermelha */
-        color: #A51C30;            /* Texto Vermelho */
-        font-weight: 600;
-        transition: 0.3s;
-    }
-    
-    /* Efeito ao passar o mouse (Hover) */
-    .stButton button:hover {
-        background-color: #A51C30;
-        color: white;
-        border: 1px solid #A51C30;
-    }
-
-    /* 3. Tira o espaço extra do topo da página principal também */
-    .block-container {
-        padding-top: 2rem; 
-    }
+    section[data-testid="stSidebar"] .block-container { padding-top: 2rem; padding-bottom: 1rem; }
+    .stButton button { width: 100%; border-radius: 6px; height: 2.8em; background-color: #ffffff; border: 1px solid #A51C30; color: #A51C30; font-weight: 600; transition: 0.3s; }
+    .stButton button:hover { background-color: #A51C30; color: white; border: 1px solid #A51C30; }
+    .block-container { padding-top: 2rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -58,52 +90,30 @@ file_id = st.secrets.get("GDRIVE_FILE_ID")
 # --- 3. FUNÇÕES DE INFRAESTRUTURA ---
 
 def download_pdf_if_needed(filename):
-    if os.path.exists(filename):
+    if os.path.exists(filename): return True
+    if not file_id: return False
+    try:
+        url = f'https://drive.google.com/uc?id={file_id}'
+        gdown.download(url, filename, quiet=False)
         return True
-    if not file_id:
-        st.error("Erro: ID do arquivo não configurado nos Secrets.")
-        return False
-    with st.spinner("Baixando biblioteca de Harvard..."):
-        try:
-            url = f'https://drive.google.com/uc?id={file_id}'
-            gdown.download(url, filename, quiet=False)
-            return True
-        except Exception as e:
-            st.error(f"Falha ao baixar o arquivo: {e}")
-            return False
+    except: return False
 
 @st.cache_resource
 def load_pdf_text(pdf_path):
-    """Lê o PDF usando pdfplumber (mais robusto contra erros de layout)."""
-    
-    if not download_pdf_if_needed(pdf_path):
-        return None
-    
+    if not download_pdf_if_needed(pdf_path): return None
     text = ""
     try:
-        status = st.empty()
-        status.info("Processando arquivo PDF com alta precisão... (Isso acontece uma vez)")
-        
         with pdfplumber.open(pdf_path) as pdf:
-            total_pages = len(pdf.pages)
-            
-            for i, page in enumerate(pdf.pages):
-                try:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text += extracted + "\n"
-                except Exception as e:
-                    print(f"Erro na página {i+1}: {e}")
-                    continue
-                    
-        status.empty()
+            for page in pdf.pages:
+                extracted = page.extract_text()
+                if extracted: text += extracted + "\n"
         return text
-
-    except Exception as e:
-        st.error(f"Erro fatal ao ler o PDF: {e}")
-        return None
+    except: return None
 
 def get_gemini_response(chat_history_streamlit, mode, context_text):
+    # Injetando instrução de idioma no sistema
+    lang_instruction = "Responda sempre em Português Brasileiro." if st.session_state.lang == "pt" else "Always respond in English."
+    
     prompts = {
         "Consultor": f"""
             Você é um Consultor Sênior de Estratégia, formado pela Harvard Business School.
@@ -183,149 +193,113 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             """
     }
     
-    system_instruction = prompts.get(mode, "Você é um assistente útil.")
+    system_instruction = prompts.get(mode, "You are a helpful assistant.")
     client = genai.Client(api_key=api_key)
     
     contents = []
     for msg in chat_history_streamlit:
         role = "user" if msg["role"] == "user" else "model"
-        contents.append(
-            types.Content(
-                role=role,
-                parts=[types.Part.from_text(text=msg["content"])]
-            )
-        )
+        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
 
-    generate_content_config = types.GenerateContentConfig(
-        temperature=0.5,
-        top_p=0.95,
-        system_instruction=system_instruction,
-    )
+    config = types.GenerateContentConfig(temperature=0.5, top_p=0.95, system_instruction=system_instruction)
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=generate_content_config
-        )
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=contents, config=config)
         return response.text
     except Exception as e:
-        return f"Erro na API Google: {str(e)}"
+        return f"Error: {str(e)}"
 
-# --- 4. INTERFACE (FRONTEND) ---
+# --- 4. INTERFACE ---
 
-# --- SIDEBAR (BARRA LATERAL) REFINADA ---
 with st.sidebar:
-    # 1. Cabeçalho e Branding
+    # Seleção de Idioma
+    col_lang1, col_lang2 = st.columns(2)
+    if col_lang1.button("🇧🇷 PT-BR"):
+        st.session_state.lang = "pt"
+        st.rerun()
+    if col_lang2.button("🇺🇸 EN"):
+        st.session_state.lang = "en"
+        st.rerun()
+
+    st.markdown("---")
     col_logo, col_text = st.columns([1, 4])
-    with col_logo:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=45)
-    with col_text:
-        st.markdown("### **Mentor AI**")
+    with col_logo: st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Harvard_University_shield.png/1200px-Harvard_University_shield.png", width=45)
+    with col_text: st.markdown(f"### **{t['title']}**")
     
-    # 2. O CONTEXTO 
-    with st.expander("📖 O que é este app?", expanded=False):
-        st.markdown("""
-        <div style="font-size: 12px; opacity: 0.8;">
-        Este é um Mentor Virtual treinado com o currículo <b>Harvard Business Impact</b>.
-        <br><br>
-        <b>Domine 4 Pilares:</b>
-        <ul style="list-style-type: none; padding-left: 0; margin-top: 5px;">
-            <li>💰 <b>Finanças:</b> ROI, DRE, Fluxo de Caixa.</li>
-            <li>📢 <b>Marketing:</b> Estratégia, 4Ps, Branding.</li>
-            <li>🤝 <b>Negociação:</b> BATNA, ZOPA, Acordos.</li>
-            <li>👔 <b>Liderança:</b> Gestão de Times e Crises.</li>
-        </ul>
-        <i>Use os modos abaixo para interagir.</i>
-        </div>
-        """, unsafe_allow_html=True)
+    with st.expander(t['sidebar_about'], expanded=False):
+        st.markdown(f"<div style='font-size: 12px; opacity: 0.8;'>{t['description']}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
+    st.markdown(t['sidebar_control'])
+    mode = st.radio(t['mode_label'], ["Consultor", "Quiz", "Roleplay"], label_visibility="collapsed")
     
-    # 3. Controles
-    st.markdown("**⚙️ Painel de Controle**")
-    mode = st.radio(
-        "Modo de Operação:", 
-        ["Consultor", "Quiz", "Roleplay"], 
-        label_visibility="collapsed"
-    )
-    
-    # Explicação dinâmica do modo (UX)
-    if mode == "Consultor":
-        st.info("💡 **Consultor:** Traga um problema real do seu trabalho e receba um plano de ação baseado em frameworks.")
-    elif mode == "Quiz":
-        st.info("🧠 **Quiz:** O Mentor fará perguntas difíceis (Case Method) para testar se você domina a teoria.")
-    elif mode == "Roleplay":
-        st.info("🎭 **Roleplay:** Simulação tensa. O Mentor será um personagem difícil (Chefe/Cliente) e você deve negociar.")
+    if mode == "Consultor": st.info(t['mode_consultant'])
+    elif mode == "Quiz": st.info(t['mode_quiz'])
+    elif mode == "Roleplay": st.info(t['mode_roleplay'])
     
     st.markdown("---")
-    
-    # Botão de Limpeza
-    if st.button("🗑️ Nova Conversa"):
+    if st.button(t['new_chat']):
         st.session_state.messages = []
         st.rerun()
 
-    # Rodapé
-    st.markdown(
-        "<div style='text-align: center; opacity: 0.6; font-size: 11px; margin-top: 20px;'>Powered by Gemini 2.5 Flash & Harvard Business Publishing</div>", 
-        unsafe_allow_html=True
-    )
-
 # --- LÓGICA PRINCIPAL ---
-
 if not api_key:
-    st.warning("⚠️ API Key não detectada.")
+    st.warning(t['alert_api'])
     st.stop()
 
-# Carregamento do PDF (Blindado com pdfplumber)
-# Certifique-se que a função load_pdf_text já foi definida antes no seu código
 pdf_text = load_pdf_text("Harvard Manager Mentor.pdf")
 if not pdf_text:
     st.stop()
 
-# Inicializa Histórico
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- TELA DE BOAS-VINDAS (Hero Section) ---
-# Só aparece se o chat estiver vazio
 if len(st.session_state.messages) == 0:
-    # Usei a cor Crimson de Harvard (#A51C30) no título
-    st.markdown("<h1 style='text-align: center; color: #A51C30;'>Harvard Mentor AI 🎓</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.2rem; opacity: 0.7;'>Sua vantagem competitiva em <b>Gestão e Estratégia</b>.</p>", unsafe_allow_html=True)
-    st.write("") # Espaço vazio
+    st.markdown(f"<h1 style='text-align: center; color: #A51C30;'>{t['title']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; font-size: 1.2rem; opacity: 0.7;'>{t['hero_subtitle']}</p>", unsafe_allow_html=True)
+    st.write("") 
     
-    # Sugestões inteligentes (Icebreakers)
-    col1, col2, col3 = st.columns(3)
     suggestion = None
     
-    # Mostra botões diferentes dependendo do modo selecionado na sidebar
+    # --- MODO CONSULTOR ---
     if mode == "Consultor":
-        st.markdown("##### 🚀 Comece resolvendo um problema:")
-        if st.button("📉 Precificação Premium", use_container_width=True):
-            suggestion = "Como definir o preço de um novo produto premium em um mercado saturado segundo o material?"
-        if st.button("🤝 Negociação com Monopólio", use_container_width=True):
-            suggestion = "Quais são as melhores táticas para negociar com um fornecedor que tem monopólio?"
-        if st.button("📊 Finanças para Não-Financeiros", use_container_width=True):
-            suggestion = "Explique a diferença entre Fluxo de Caixa e Lucro como se eu fosse um CEO iniciante."
-            
-    elif mode == "Quiz":
-        st.markdown("##### 🧠 Teste seus conhecimentos:")
-        if st.button("🎲 Desafio de Liderança", use_container_width=True):
-            suggestion = "Faça uma pergunta difícil de múltipla escolha (Case Study) sobre Liderança e Gestão de Equipes."
-        if st.button("💰 Desafio Financeiro", use_container_width=True):
-            suggestion = "Crie um cenário de investimento e pergunte se devo usar ROI ou Payback."
-        if st.button("📢 Desafio de Marketing", use_container_width=True):
-            suggestion = "Me coloque em uma crise de PR (Relações Públicas) e pergunte qual a melhor saída."
+        st.markdown(t['suggestion_title_consultant'])
+        col1, col2, col3 = st.columns(3)
+        if st.session_state.lang == "pt":
+            if col1.button("📉 Estratégia de Preço", use_container_width=True): suggestion = "Como definir o preço de um produto premium segundo o material?"
+            if col2.button("🤝 Táticas de BATNA", use_container_width=True): suggestion = "Como o BATNA ajuda em uma negociação difícil?"
+            if col3.button("📊 Fluxo vs Lucro", use_container_width=True): suggestion = "Qual a diferença entre Fluxo de Caixa e Lucro no material?"
+        else:
+            if col1.button("📉 Pricing Strategy", use_container_width=True): suggestion = "How to define premium product pricing according to the material?"
+            if col2.button("🤝 BATNA Tactics", use_container_width=True): suggestion = "How does BATNA help in a tough negotiation?"
+            if col3.button("📊 Cash vs Profit", use_container_width=True): suggestion = "What is the difference between Cash Flow and Profit in the text?"
 
+    # --- MODO QUIZ ---
+    elif mode == "Quiz":
+        st.markdown(t['suggestion_title_quiz'])
+        col1, col2, col3 = st.columns(3)
+        if st.session_state.lang == "pt":
+            if col1.button("🎲 Caso de Liderança", use_container_width=True): suggestion = "Inicie um Quiz com um caso sobre Gestão de Equipes."
+            if col2.button("💰 Caso de Finanças", use_container_width=True): suggestion = "Inicie um Quiz sobre ROI e análise financeira."
+            if col3.button("📢 Caso de Marketing", use_container_width=True): suggestion = "Inicie um Quiz sobre os 4Ps do Marketing."
+        else:
+            if col1.button("🎲 Leadership Case", use_container_width=True): suggestion = "Start a Quiz with a case about Team Management."
+            if col2.button("💰 Finance Case", use_container_width=True): suggestion = "Start a Quiz about ROI and financial analysis."
+            if col3.button("📢 Marketing Case", use_container_width=True): suggestion = "Start a Quiz about the 4Ps of Marketing."
+
+    # --- MODO ROLEPLAY ---
     elif mode == "Roleplay":
-        st.markdown("##### 🎭 Escolha seu oponente:")
-        if st.button("😡 Cliente Furioso", use_container_width=True):
-            suggestion = "Inicie uma simulação onde você é um cliente furioso porque a entrega atrasou. Eu sou o gerente. Seja duro."
-        if st.button("💼 Chefe Cortando Custos", use_container_width=True):
-            suggestion = "Atue como meu chefe pedindo cortes de orçamento irracionais. Eu preciso defender meu time."
-        if st.button("🦈 Investidor Shark", use_container_width=True):
-            suggestion = "Você é um investidor cético. Eu estou tentando vender minha ideia. Comece apontando falhas no meu plano."
+        st.markdown(t['suggestion_title_roleplay'])
+        col1, col2, col3 = st.columns(3)
+        if st.session_state.lang == "pt":
+            if col1.button("😡 Cliente Difícil", use_container_width=True): suggestion = "Atue como um cliente irritado com um atraso. Eu sou o gerente."
+            if col2.button("💼 Chefe Exigente", use_container_width=True): suggestion = "Você é meu chefe pedindo um corte de gastos. Vou negociar o orçamento."
+            if col3.button("🦈 Investidor Shark", use_container_width=True): suggestion = "Você é um investidor cético avaliando meu novo projeto."
+        else:
+            if col1.button("😡 Difficult Customer", use_container_width=True): suggestion = "Act as a customer angry about a delay. I am the manager."
+            if col2.button("💼 Demanding Boss", use_container_width=True): suggestion = "You are my boss asking for budget cuts. I will negotiate."
+            if col3.button("🦈 Shark Investor", use_container_width=True): suggestion = "You are a skeptical investor evaluating my new project."
 
     if suggestion:
         st.session_state.messages.append({"role": "user", "content": suggestion})
@@ -333,30 +307,25 @@ if len(st.session_state.messages) == 0:
 
 # --- EXIBIÇÃO DO CHAT ---
 else:
-    # Cabeçalho discreto durante a conversa
-    st.caption(f"Modo Atual: {mode} | Base de Conhecimento: Harvard Mentor")
+    # Cabeçalho discreto que muda com o idioma
+    status_msg = f"Mode: {mode} | Source: Harvard ManageMentor" if st.session_state.lang == "en" else f"Modo: {mode} | Fonte: Harvard ManageMentor"
+    st.caption(status_msg)
 
-# 1. Renderiza mensagens anteriores
-for message in st.session_state.messages:
-    avatar = "🤖" if message["role"] == "assistant" else "👤"
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+    for message in st.session_state.messages:
+        avatar = "🤖" if message["role"] == "assistant" else "👤"
+        with st.chat_message(message["role"], avatar=avatar):
+            st.markdown(message["content"])
 
-# 2. Input do usuário
-if prompt := st.chat_input("Digite sua dúvida, resposta ou comando..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="👤"):
-        st.markdown(prompt)
+    if prompt := st.chat_input(t['input_placeholder']):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.rerun()
 
-# 3. Geração de Resposta (Lógica corrigida fora do if prompt)
-if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-    with st.chat_message("assistant", avatar="🤖"):
-        # Feedback visual de pensamento
-        with st.spinner("Analisando frameworks de Harvard..."):
-            try:
-                # Chama a função de resposta (que deve estar definida no início do arquivo)
-                response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
-                st.markdown(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
-            except Exception as e:
-                st.error(f"Erro ao conectar com o Mentor: {e}")
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        with st.chat_message("assistant", avatar="🤖"):
+            with st.spinner("..." if st.session_state.lang == "en" else "Analisando..."):
+                try:
+                    response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
+                    st.markdown(response_text)
+                    st.session_state.messages.append({"role": "assistant", "content": response_text})
+                except Exception as e:
+                    st.error(f"Error: {e}")
