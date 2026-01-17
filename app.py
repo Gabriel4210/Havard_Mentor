@@ -223,7 +223,8 @@ with st.sidebar:
     with col_text: st.markdown(f"### **{t['title']}**")
     
     with st.expander(t['sidebar_about'], expanded=False):
-        st.markdown(f"<div style='font-size: 12px; opacity: 0.8;'>{t['description']}</div>", unsafe_allow_html=True)
+        st.markdown(t['description'])
+        st.caption("Powered by Harvard Business Publishing")
     
     st.markdown("---")
     st.markdown(t['sidebar_control'])
