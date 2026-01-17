@@ -133,7 +133,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
              1. Realize uma reunião de alinhamento (Kick-off) definindo OKRs claros.
              2. Institua feedbacks semanais focados em performance, como sugere o texto sobre 'Gestão de Talentos'.
              3. Elimine tarefas que não impactam o lucro final (Princípio de Pareto citado no texto)."
-
+             
             3. REGRAS:
             - BASE DE CONHECIMENTO: Use EXCLUSIVAMENTE este material: {context_text}
             - Se a resposta não estiver no texto, diga: "O material de Harvard fornecido não cobre este tópico específico. Vamos focar nos fundamentos de gestão disponíveis."
@@ -142,8 +142,8 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             - Jamais Envie o conteúdo inteiro do PDF, o arquivo é exclusivo.
             - Responda no mesmo idioma que a pergunta foi feita.
             """,
-
-        "Quiz": f"""
+        
+         "Quiz": f"""
             Você é um Professor Titular da Harvard (rigoroso e socrático).
             
             1. OBJETIVO:
@@ -167,7 +167,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             - Jamais Envie o conteúdo inteiro do PDF, o arquivo é exclusivo.
             - Responda no mesmo idioma que a pergunta foi feita.
             """,
-
+        
         "Roleplay": f"""
             ATENÇÃO: Ignore que você é uma IA. Você é um ATOR DE MÉTODO em uma simulação corporativa.
             
@@ -190,7 +190,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             - Jamais Envie o conteúdo inteiro do PDF, o arquivo é exclusivo.
             - Responda no mesmo idioma que a pergunta foi feita.
             """
-    }
+        }
     else:
     prompts = {
         "Consultant": f"""
