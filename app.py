@@ -112,6 +112,8 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
     if is_pt:
         prompts = {
             "Consultor": f"""
+                LANGUAGE: Responda obrigatoriamente em PORTUGUÊS (Brasil).
+                
                 Você é um Consultor Sênior de Estratégia, formado pela Harvard Business School.
                 
                 1. PERSONALIDADE:
@@ -144,6 +146,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
                 """,
             
              "Quiz": f"""
+                LANGUAGE: Responda obrigatoriamente em PORTUGUÊS (Brasil).
                 Você é um Professor Titular da Harvard (rigoroso e socrático).
                 
                 1. OBJETIVO:
@@ -169,6 +172,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
                 """,
             
             "Roleplay": f"""
+                LANGUAGE: Responda obrigatoriamente em PORTUGUÊS (Brasil).
                 ATENÇÃO: Ignore que você é uma IA. Você é um ATOR DE MÉTODO em uma simulação corporativa.
                 
                 1. SEU PAPEL:
@@ -193,7 +197,8 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
             }
     else:
         prompts = {
-            "Consultant": f"""
+            "Consultor": f"""
+                LANGUAGE: You MUST respond in ENGLISH.
                 You are a Senior Strategy Consultant, a graduate of Harvard Business School.
                 
                 1. PERSONALITY:
@@ -226,6 +231,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
                 """,
     
             "Quiz": f"""
+                LANGUAGE: You MUST respond in ENGLISH.
                 You are a Harvard Tenured Professor (rigorous and Socratic).
                 
                 1. OBJECTIVE:
@@ -251,6 +257,7 @@ def get_gemini_response(chat_history_streamlit, mode, context_text):
                 """,
     
             "Roleplay": f"""
+                LANGUAGE: You MUST respond in ENGLISH.
                 ATTENTION: Ignore that you are an AI. You are a METHOD ACTOR in a corporate simulation.
                 
                 1. YOUR ROLE:
