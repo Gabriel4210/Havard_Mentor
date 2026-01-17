@@ -251,6 +251,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- TELA DE BOAS-VINDAS (Hero Section) ---
+# Só aparece se o chat estiver vazio
 if len(st.session_state.messages) == 0:
     st.markdown(f"<h1 style='text-align: center; color: #A51C30;'>{t['title']}</h1>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center; font-size: 1.2rem; opacity: 0.7;'>{t['hero_subtitle']}</p>", unsafe_allow_html=True)
@@ -258,7 +259,6 @@ if len(st.session_state.messages) == 0:
     
     suggestion = None
     
-    # --- MODO CONSULTOR ---
     if mode == "Consultor":
         st.markdown(t['suggestion_title_consultant'])
         col1, col2, col3 = st.columns(3)
@@ -271,7 +271,6 @@ if len(st.session_state.messages) == 0:
             if col2.button("🤝 BATNA Tactics", use_container_width=True): suggestion = "How does BATNA help in a tough negotiation?"
             if col3.button("📊 Cash vs Profit", use_container_width=True): suggestion = "What is the difference between Cash Flow and Profit in the text?"
 
-    # --- MODO QUIZ ---
     elif mode == "Quiz":
         st.markdown(t['suggestion_title_quiz'])
         col1, col2, col3 = st.columns(3)
@@ -284,7 +283,6 @@ if len(st.session_state.messages) == 0:
             if col2.button("💰 Finance Case", use_container_width=True): suggestion = "Start a Quiz about ROI and financial analysis."
             if col3.button("📢 Marketing Case", use_container_width=True): suggestion = "Start a Quiz about the 4Ps of Marketing."
 
-    # --- MODO ROLEPLAY ---
     elif mode == "Roleplay":
         st.markdown(t['suggestion_title_roleplay'])
         col1, col2, col3 = st.columns(3)
@@ -301,9 +299,10 @@ if len(st.session_state.messages) == 0:
         st.session_state.messages.append({"role": "user", "content": suggestion})
         st.rerun()
 
-# --- EXIBIÇÃO DO CHAT ---
-else:
-    # Cabeçalho discreto que muda com o idioma
+# --- EXIBIÇÃO DO CHAT E INPUT ---
+
+# 1. Renderiza o histórico (se houver)
+if len(st.session_state.messages) > 0:
     status_msg = f"Mode: {mode} | Source: Harvard ManageMentor" if st.session_state.lang == "en" else f"Modo: {mode} | Fonte: Harvard ManageMentor"
     st.caption(status_msg)
 
@@ -312,16 +311,18 @@ else:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input(t['input_placeholder']):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.rerun()
+# 2. BARRA DE DIGITAÇÃO (Sempre visível no rodapé)
+if prompt := st.chat_input(t['input_placeholder']):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.rerun()
 
-    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-        with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("..." if st.session_state.lang == "en" else "Analisando..."):
-                try:
-                    response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
-                    st.markdown(response_text)
-                    st.session_state.messages.append({"role": "assistant", "content": response_text})
-                except Exception as e:
-                    st.error(f"Error: {e}")
+# 3. Geração de Resposta
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("..." if st.session_state.lang == "en" else "Analisando..."):
+            try:
+                response_text = get_gemini_response(st.session_state.messages, mode, pdf_text)
+                st.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
+            except Exception as e:
+                st.error(f"Error: {e}")
